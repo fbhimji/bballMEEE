@@ -1,0 +1,19 @@
+# Core computer vision and deep learning
+opencv-python>=4.8.0
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Object tracking
+supervision>=0.16.0
+
+# Image processing
+Pillow>=9.0.0
+numpy>=1.24.0
+
+# CLIP model for team assignment
+transformers>=4.30.0
+
+# Additional dependencies that might be needed
+scipy>=1.10.0
+matplotlib>=3.7.0
