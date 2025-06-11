@@ -7,6 +7,7 @@ from team_assigner.team_assigner import TeamAssigner
 from drawers.player_tracks_drawer import PlayerTracksDrawer
 from drawers.ball_tracks_drawer import BallTracksDrawer
 from drawers.hoop_tracks_drawer import HoopTracksDrawer
+from ball_aquisition import BallAquisitionDetector
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,6 +25,7 @@ def main():
     player_drawer = PlayerTracksDrawer()
     ball_drawer = BallTracksDrawer()
     hoop_drawer = HoopTracksDrawer()
+    ball_acquisition_detector = BallAquisitionDetector()
     
 
     # --- Set up video streaming ---
@@ -47,15 +49,16 @@ def main():
             hoop_data = hoop_tracker.get_hoop_bbox(frame)
 
             # -- Player tracking --
-            if frame_count % 50 == 0:
-                assigner.player_team_dict.clear()
-
-            track_dict = tracker.get_object_tracks(frame)
+            track_dict = tracker.get_object_tracks(frame) # player tracker
             team_assignment = assigner.get_frame_team_assignments(frame, track_dict)
+
+            # Ball Acquisition
+            ball_tracks_frame = {1: {"bbox": ball_bbox}} if ball_bbox else {}
+            player_with_ball = ball_acquisition_detector.detect_ball_possession(track_dict, ball_tracks_frame)
 
             # -- Drawing --
             frame = ball_drawer.draw_frame(frame, ball_dict)
-            frame = player_drawer.draw_frame(frame, track_dict, team_assignment)
+            frame = player_drawer.draw_frame(frame, track_dict, team_assignment, player_with_ball)
             frame = hoop_drawer.draw_frame(frame, hoop_data)
 
             # -- Show and optionally save frame --
