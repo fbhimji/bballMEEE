@@ -44,6 +44,10 @@ class HoopTracker: # idea for hoop ball collision ball has to be above and right
                     best_bbox = bbox
                     best_conf = conf
 
+            elif cls_id == self.cls_names_inv.get("made", -1): ## add hoop and ball colition logic too as a check
+                print("finallyyyyyyyyy")
+                return -1
+
         if best_bbox is not None:
             self.last_hoop_bbox = best_bbox
             self.last_confidence = best_conf

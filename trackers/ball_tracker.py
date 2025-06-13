@@ -5,7 +5,7 @@ import numpy as np
 class BallTracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)         # Load the YOLO model from the specified path
-        self.model.to("mps")                  # gpu
+        self.model.to("mps")                # gpu
         self.cls_names_inv = {v: k for k, v in self.model.names.items()}  # Create a map from class ID to class name
         self.ball_history = []                # Initialize list to store ball positions over time
         self.last_velocity = None

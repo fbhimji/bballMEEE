@@ -5,10 +5,11 @@ from drawers.utils import measure_distance, get_center_of_bbox
 class BallAquisitionDetector:
     def __init__(self):
         self.possession_threshold = 50 # max distance from player
-        self.min_frames = 5 # min frames a ball needs to be with player so they have posession
+        self.min_frames = 8 # min frames a ball needs to be with player so they have posession
         self.containment_threshold = 0.8 # the bounding box overalp percentage if ball overlaps 80 with player that player has ball
 
-        self.consecutive_possession_count = {}  
+        self.consecutive_possession_count = {}
+        self.possession_chain = [] # keeps track of last 2 with possesion for assists
     
     def get_key_basketball_player_assignment_points(self, player_bbox, ball_center):
         ball_center_x = ball_center[0]
@@ -109,16 +110,16 @@ class BallAquisitionDetector:
             
         return -1
         
-    def detect_ball_possession(self, player_tracks_frame, ball_tracks_frame):
-        # returns -1's so by default no onw has ball and if we have best candidate we have someone w ball
+    def detect_ball_possession(self, player_tracks_frame, ball_tracks_frame, player_assignments):
+        # returns -1's so by default no onw has ball and if we have best candidate we have someone w ball, and also -1 if last player with ball is undefined
         ball_info = ball_tracks_frame.get(1, {})
         if not ball_info:
             self.consecutive_possession_count = {}
-            return -1
+            return -1, []
         ball_bbox = ball_info.get("bbox", [])
         if not ball_bbox:
             self.consecutive_possession_count = {} 
-            return -1
+            return -1, []
         ball_center = get_center_of_bbox(ball_bbox)
 
         best_player_id = self.find_best_candidate_for_possession(ball_center, player_tracks_frame, ball_bbox)
@@ -128,7 +129,27 @@ class BallAquisitionDetector:
             self.consecutive_possession_count = {best_player_id:number_of_consecutive_frames}  
 
             if self.consecutive_possession_count[best_player_id] >= self.min_frames:
-                return best_player_id
+                new_player_info = [best_player_id, player_assignments.get(best_player_id)]
+
+                # Only update if the ball has changed hands to a new player
+                if not self.possession_chain or self.possession_chain[0][0] != new_player_info[0]:
+                    
+                    # If the chain is empty or the new player is on a different team (a steal), reset the chain
+                    if not self.possession_chain or self.possession_chain[0][1] != new_player_info[1]: # need to test this
+                        if not self.possession_chain: # first time touching ball
+                            self.possession_chain = [new_player_info] 
+                        else:
+                            print("STEAL DETECTED!")
+                            self.possession_chain = [new_player_info]
+                    # Otherwise, it's a pass to a teammate, add them to the front of the chain
+                    else:
+                        self.possession_chain.insert(0, new_player_info)
+
+                # Ensure the chain never has more than the last 2 players
+                self.possession_chain = self.possession_chain[:2]
+                
+                # Return the current player with the ball and the updated possession chain
+                return best_player_id, self.possession_chain
         else:
             self.consecutive_possession_count = {}
-        return -1
+        return -1, []
